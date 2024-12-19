@@ -6,7 +6,6 @@
 #include "rsa.h"
 #include "file_io.h"
 
-
 using namespace std;
 
 int main() {
@@ -16,6 +15,7 @@ int main() {
         // 파일 경로 입력 받기
         cout << "Enter the path to the file: ";
         getline(cin, filePath);
+        cout << filePath << endl;
 
         // 암호화 또는 복호화 선택
         cout << "Do you want to encrypt or decrypt the file? (encrypt/decrypt): ";
@@ -32,31 +32,33 @@ int main() {
         // AES 객체 생성
         AES aes(key);
 
-        // 파일 읽기
-        string fileContent = readFile(filePath);
+        // 파일 읽기 (이제 vector<uint8_t>를 반환함)
+        vector<uint8_t> fileContent;
+
         try {
-            fileContent = readFile(filePath);
+            fileContent = readFile(filePath);  // readFile 함수 수정됨
             cout << "File content read successfully." << endl;
+            cout << "File size: " << fileContent.size() << " bytes" << endl;
         }
         catch (const exception& e) {
-            throw runtime_error("Error reading file: " + string(e.what()));
+            cerr << "Error reading file: " << filePath << ": " << e.what() << endl;
+            return 1;
         }
 
-        vector<uint8_t> inputData(fileContent.begin(), fileContent.end());
         vector<uint8_t> outputData;
 
+        // 암호화 또는 복호화 수행
         if (operation == "encrypt") {
-            outputData = aes.encrypt(inputData);
-            writeFile(filePath + ".enc.txt", string(outputData.begin(), outputData.end()));
-            cout << "File encrypted and saved as " << filePath + ".enc.txt" << endl;
+            outputData = aes.encrypt(fileContent);  // AES 암호화
+            writeFile(filePath + ".enc", outputData);  // 파일을 바이너리로 저장
+            cout << "File encrypted and saved as " << filePath + ".enc" << endl;
         }
         else if (operation == "decrypt") {
-            outputData = aes.decrypt(inputData); writeFile(filePath + ".dec.txt", string(outputData.begin(), outputData.end()));
-            cout << "File decrypted and saved as " << filePath + ".dec.txt" << endl;
+            outputData = aes.decrypt(fileContent);  // AES 복호화
+            writeFile(filePath + ".dec", outputData);  // 파일을 바이너리로 저장
+            cout << "File decrypted and saved as " << filePath + ".dec" << endl;
         }
-        else {
-            cerr << "Invalid operation. Please enter 'encrypt' or 'decrypt'." << endl;
-        }
+
     }
     catch (const exception& e) {
         cerr << "Error: " << e.what() << endl;
@@ -65,4 +67,3 @@ int main() {
 
     return 0;
 }
-
