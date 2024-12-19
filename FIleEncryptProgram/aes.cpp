@@ -7,35 +7,47 @@
 #include <algorithm>
 
 using namespace std;
-AES::AES(const string& key) {
-	this->key = vector<uint8_t>(key.begin(), key.end());
+
+AES::AES(const std::string& keyHex) { // 16진수 문자열을 바이트 벡터로 변환 
+	vector<uint8_t> keyBytes; 
+	for (size_t i = 0; i < keyHex.length(); i += 2)
+		keyBytes.push_back(static_cast<uint8_t>(stoi(keyHex.substr(i, 2), nullptr, 16)));  
+	this->key = keyBytes; 
 	keyExpansion();
 }
 
 string AES::generateRandomKey() {
-	const int keyLenth = 16; // AES-128은 16바이트의 키 (128 비트)
-	vector<uint8_t> key(keyLenth);
+	const int keyLength = 16; // AES-128은 16바이트의 키 (128 비트)
+	vector<uint8_t> key;
+	key.reserve(keyLength);
 
 	random_device rd;
 	mt19937 gen(rd());
 	uniform_int_distribution<> dis(0, 255);
 
-	for (int i = 0; i < keyLenth; ++i)
+	for (int i = 0; i < keyLength; ++i)
 		key.push_back(static_cast<uint8_t>(dis(gen)));
 
 	stringstream ss;
-	for (int i = 0; i < keyLenth; ++i)
+	for (int i = 0; i < keyLength; ++i)
 		ss << hex << setw(2) << setfill('0') << static_cast<int>(key[i]);
 
 	return ss.str();
 }
 
-vector<uint8_t> AES::hexToBytes(const string& hex) {
-	vector<uint8_t> bytes;
-	for (size_t i = 0; i < hex.length(); i += 2) 
-		bytes.push_back(static_cast<uint8_t>(stoi(hex.substr(i, 2), nullptr, 16)));
+// 패딩 추가 함수
+vector<uint8_t> AES::padData(const vector<uint8_t>& data) {
+	vector<uint8_t> paddedData = data;
+	size_t padLength = 16 - (data.size() % 16);
+	paddedData.insert(paddedData.end(), padLength, static_cast<uint8_t>(padLength));
+	return paddedData;
+}
 
-	return bytes;
+// 패딩 제거 함수
+vector<uint8_t> AES::unpadData(const vector<uint8_t>& data) {
+	if (data.empty()) return data;
+	size_t padLength = data.back();
+	return vector<uint8_t>(data.begin(), data.end() - padLength);
 }
 
 void AES::keyExpansion() {
@@ -286,6 +298,9 @@ const uint8_t AES::Rcon[11]{
 };
 
 vector<uint8_t> AES::encrypt(const vector<uint8_t>& data) {
+	// 데이터 패딩
+	vector<uint8_t> paddedData = padData(data);
+	
 	// 초기 상태 설정
 	state = vector<vector<uint8_t>>(4, vector<uint8_t>(4));
 	for (int i = 0; i < data.size(); ++i)
@@ -328,9 +343,9 @@ vector<uint8_t> AES::decrypt(const std::vector<uint8_t>& data) {
 	invSubBytes();
 	addRoundKey(0);
 	
-	// 결과 리턴
+	// 패딩 제거 후 결과 리턴
 	vector<uint8_t>decryptedData(16);
 	for (int i = 0; i < 16; ++i) 
 		decryptedData[i] = state[i / 4][i % 4];
-	return decryptedData;
+	return unpadData(decryptedData);
 }
