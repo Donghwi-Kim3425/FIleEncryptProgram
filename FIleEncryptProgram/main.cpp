@@ -2,8 +2,6 @@
 #include <string>
 #include <vector>
 #include "aes.h"
-#include "seed.h"
-#include "rsa.h"
 #include "file_io.h"
 
 using namespace std;
@@ -15,7 +13,7 @@ int main() {
         // 파일 경로 입력 받기
         cout << "Enter the path to the file: ";
         getline(cin, filePath);
-        cout << filePath << endl;
+        cout << "File Path: " << filePath << endl;
 
         // 암호화 또는 복호화 선택
         cout << "Do you want to encrypt or decrypt the file? (encrypt/decrypt): ";
@@ -32,22 +30,20 @@ int main() {
         // AES 객체 생성
         AES aes(key);
 
-        // 파일 읽기 (이제 vector<uint8_t>를 반환함)
+        // 파일 읽기
         vector<uint8_t> fileContent;
-
         try {
-            fileContent = readFile(filePath);  // readFile 함수 수정됨
+            fileContent = readFile(filePath);
             cout << "File content read successfully." << endl;
             cout << "File size: " << fileContent.size() << " bytes" << endl;
         }
         catch (const exception& e) {
-            cerr << "Error reading file: " << filePath << ": " << e.what() << endl;
+            cerr << "Error reading file: " << e.what() << endl;
             return 1;
         }
 
-        vector<uint8_t> outputData;
-
         // 암호화 또는 복호화 수행
+        vector<uint8_t> outputData;
         if (operation == "encrypt") {
             outputData = aes.encrypt(fileContent);  // AES 암호화
             writeFile(filePath + ".enc", outputData);  // 파일을 바이너리로 저장
