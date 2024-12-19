@@ -1,8 +1,10 @@
 #include "aes.h"
-#include <iostream>
 #include <vector>
 #include <cstdint>
 #include <random>
+#include <sstream>
+#include <iomanip>
+#include <algorithm>
 
 using namespace std;
 AES::AES(const string& key) {
@@ -12,16 +14,28 @@ AES::AES(const string& key) {
 
 string AES::generateRandomKey() {
 	const int keyLenth = 16; // AES-128은 16바이트의 키 (128 비트)
-	string key;
-	key.reserve(keyLenth);
+	vector<uint8_t> key(keyLenth);
 
 	random_device rd;
 	mt19937 gen(rd());
 	uniform_int_distribution<> dis(0, 255);
 
 	for (int i = 0; i < keyLenth; ++i)
-		key.push_back(static_cast<char>(dis(gen)));
-	return key;
+		key.push_back(static_cast<uint8_t>(dis(gen)));
+
+	stringstream ss;
+	for (int i = 0; i < keyLenth; ++i)
+		ss << hex << setw(2) << setfill('0') << static_cast<int>(key[i]);
+
+	return ss.str();
+}
+
+vector<uint8_t> AES::hexToBytes(const string& hex) {
+	vector<uint8_t> bytes;
+	for (size_t i = 0; i < hex.length(); i += 2) 
+		bytes.push_back(static_cast<uint8_t>(stoi(hex.substr(i, 2), nullptr, 16)));
+
+	return bytes;
 }
 
 void AES::keyExpansion() {

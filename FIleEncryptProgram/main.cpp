@@ -22,13 +22,14 @@ int main() {
 
     // 랜덤 키 생성
     string key = AES::generateRandomKey();
-    cout << "Generated Random Key " << key << endl;
-
-    // 파일 읽기
-    string fileContent = readFile(filePath);
+    cout << "Generated Random Key (hex): " << key << endl;
 
     // AES 객체 생성
     AES aes(key);
+
+    // 파일 읽기
+    string fileContent = readFile(filePath);
+    cout << "File content read successfully." << endl;
 
     vector<uint8_t> inputData(fileContent.begin(), fileContent.end());
     vector<uint8_t> outputData;

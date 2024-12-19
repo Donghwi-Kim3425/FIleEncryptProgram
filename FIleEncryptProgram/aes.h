@@ -11,6 +11,7 @@ class AES {
 public:
 	AES(const string& key);
 	static string generateRandomKey();
+	static vector<uint8_t> hexToBytes(const string& hex); // 16진수 키 변환 함수 
 	vector<uint8_t>encrypt(const vector<uint8_t>& data);
 	vector<uint8_t>decrypt(const vector<uint8_t>& data);
 private:
