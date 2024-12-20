@@ -48,8 +48,6 @@ vector<uint8_t> AES::padData(const vector<uint8_t>& data) {
 	return paddedData;
 }
 
-
-
 // 패딩 제거 함수
 vector<uint8_t> AES::unpadData(const vector<uint8_t>& data) {
 	if (data.empty()) return data;
@@ -61,23 +59,23 @@ void AES::keyExpansion() {
 	const int keySize = 16;
 	const int expandedKeySize = 176;
 	roundKeys.clear();
-	roundKeys.resize(expandedKeySize / 4);
+	roundKeys.resize(expandedKeySize / 4); // Correct size: 44 words
 
-	// 초기 키 복사
+	// Initial key copy
 	for (int i = 0; i < keySize; ++i)
-		roundKeys[i] = key[i];
+		roundKeys[i / 4] |= (key[i] << (8 * (3 - (i % 4)))); // Correctly insert bytes into words
 
 	int bytesGenerated = keySize;
 	int rconIndex = 1;
 	uint8_t temp[4];
 
 	while (bytesGenerated < expandedKeySize) {
-		// 이전 워드 복사
+		// Copy the last 4 bytes
 		for (int i = 0; i < 4; ++i)
-			temp[i] = roundKeys[bytesGenerated - 4 + i];
+			temp[i] = roundKeys[(bytesGenerated - 4) / 4] >> (8 * (3 - i)) & 0xFF; // Correct indexing
 
 		if (bytesGenerated % keySize == 0) {
-			// 첫 번째 워드 처리
+			// Core schedule
 			// RotWord
 			uint8_t k = temp[0];
 			temp[0] = temp[1];
@@ -94,9 +92,9 @@ void AES::keyExpansion() {
 			rconIndex++;
 		}
 
-		// 모든 워드에 대한 XOR 연산
+		// XOR and add to round keys
 		for (int i = 0; i < 4; ++i) {
-			roundKeys[bytesGenerated] = roundKeys[bytesGenerated - keySize] ^ temp[i];
+			roundKeys[bytesGenerated / 4] |= (uint32_t)(temp[i] ^ (roundKeys[(bytesGenerated - keySize) / 4] >> (8 * (3 - i)) & 0xFF)) << (8 * (3 - i)); // Correct indexing and word construction
 			bytesGenerated++;
 		}
 	}
