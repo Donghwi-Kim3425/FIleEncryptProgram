@@ -19,6 +19,13 @@ int main() {
             fileData = readFile(filePath);
             cout << "File content read successfully." << endl;
             cout << "File size: " << fileData.size() << " bytes" << endl;
+            cout << "File data (hex): ";
+            for (size_t i = 0; i < fileData.size(); ++i) {
+                printf("%02x ", fileData[i]);
+                if (i % 16 == 15) cout << endl; // 16바이트씩 출력
+            }
+            cout << endl;
+
         }
         catch (const exception& e) {
             cerr << "Error reading file: " << e.what() << endl;
@@ -41,13 +48,32 @@ int main() {
         // AES 객체 생성
         AES aes(key);
 
+
         // 암호화 또는 복호화 수행
         vector<uint8_t> outputData;
         if (operation == "encrypt") {
-            outputData = aes.encrypt(fileData);  // AES 암호화
-            writeFile(filePath + ".enc", outputData);  // 파일을 바이너리로 저장
-            cout << "File encrypted and saved as " << filePath + ".enc" << endl;
+            cout << "Starting encryption..." << endl;
+            cout << "Original data size: " << fileData.size() << " bytes" << endl;
+
+            try {
+                outputData = aes.encrypt(fileData);  // AES 암호화
+                cout << "Encryption successful. Encrypted data size: " << outputData.size() << " bytes" << endl;
+            }
+            catch (const exception& e) {
+                cerr << "Error during encryption: " << e.what() << endl;
+                return 1;  // 종료
+            }
+
+            try {
+                writeFile(filePath + ".enc", outputData);  // 파일 저장
+                cout << "File encrypted and saved as " << filePath + ".enc" << endl;
+            }
+            catch (const exception& e) {
+                cerr << "Error during file writing: " << e.what() << endl;
+                return 1;  // 종료
+            }
         }
+
         else if (operation == "decrypt") {
             outputData = aes.decrypt(fileData);  // AES 복호화
             writeFile(filePath + ".dec", outputData);  // 파일을 바이너리로 저장

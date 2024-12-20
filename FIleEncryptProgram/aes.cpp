@@ -5,6 +5,7 @@
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
+#include <iostream>
 
 using namespace std;
 
@@ -37,11 +38,16 @@ string AES::generateRandomKey() {
 
 // 패딩 추가 함수
 vector<uint8_t> AES::padData(const vector<uint8_t>& data) {
+	size_t paddingRequired = 16 - (data.size() % 16);
 	vector<uint8_t> paddedData = data;
-	size_t padLength = 16 - (data.size() % 16);
-	paddedData.insert(paddedData.end(), padLength, static_cast<uint8_t>(padLength));
+
+	// 패딩 바이트 추가 (패딩 바이트 값은 'paddingRequired' 값)
+	paddedData.insert(paddedData.end(), paddingRequired, paddingRequired);
+
 	return paddedData;
 }
+
+
 
 // 패딩 제거 함수
 vector<uint8_t> AES::unpadData(const vector<uint8_t>& data) {
@@ -295,8 +301,8 @@ const uint8_t AES::Rcon[11]{
 };
 
 vector<uint8_t> AES::encrypt(const vector<uint8_t>& data) {
-	// 데이터 패딩
-	vector<uint8_t> paddedData = padData(data);
+	// 데이터 패딩 처리
+	vector<uint8_t> paddedData = padData(data);  // 패딩 처리된 데이터 사용
 	vector<uint8_t> encryptedData;
 
 	// 16바이트 블록 단위로 처리
@@ -327,7 +333,8 @@ vector<uint8_t> AES::encrypt(const vector<uint8_t>& data) {
 
 	return encryptedData;
 }
-	
+
+
 
 vector<uint8_t> AES::decrypt(const vector<uint8_t>& data) {
 	// 입력 데이터는 16의 배수여야 함
