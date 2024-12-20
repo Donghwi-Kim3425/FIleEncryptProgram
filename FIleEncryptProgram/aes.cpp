@@ -51,50 +51,47 @@ vector<uint8_t> AES::unpadData(const vector<uint8_t>& data) {
 }
 
 void AES::keyExpansion() {
-	// 키 확장 AES-128(16바이트) 기준
-	const int keySize = 16; // 128비트
-	const int expandedKeySize = 176; // 11라운드 * 16바이트
+	const int keySize = 16;
+	const int expandedKeySize = 176;
 	roundKeys.clear();
-	roundKeys.resize(expandedKeySize / 4); // 라운드 키를 4바이트씩 저장
+	roundKeys.resize(expandedKeySize / 4);
 
-	// 초기 키를 확장된 키 배열의 첫 부분에 복사
+	// 초기 키 복사
 	for (int i = 0; i < keySize; ++i)
 		roundKeys[i] = key[i];
 
-	// 키 확장
 	int bytesGenerated = keySize;
 	int rconIndex = 1;
-	uint8_t temp[4]; // 임시 워드
+	uint8_t temp[4];
 
 	while (bytesGenerated < expandedKeySize) {
-		// 마지막 4바이트를 임시 버퍼에 복사
+		// 이전 워드 복사
 		for (int i = 0; i < 4; ++i)
-			temp[i] = roundKeys[(bytesGenerated - 4) + i];
+			temp[i] = roundKeys[bytesGenerated - 4 + i];
 
-		// 16바이트 블록의 첫 번째 워드를 위한 작업
 		if (bytesGenerated % keySize == 0) {
-			// 1바이트씩 왼쪽으로 회전 (Rot Word)
+			// 첫 번째 워드 처리
+			// RotWord
 			uint8_t k = temp[0];
 			temp[0] = temp[1];
 			temp[1] = temp[2];
 			temp[2] = temp[3];
 			temp[3] = k;
 
-			// S-Box 치환 (Sub Word)
+			// SubWord
 			for (int i = 0; i < 4; ++i)
 				temp[i] = Sbox[temp[i]];
 
-			// Rcon 추가
+			// Rcon XOR
 			temp[0] ^= Rcon[rconIndex];
 			rconIndex++;
-
-			// 확장된 키 배열에 temp 추가
-			for (int i = 0; i < 4; ++i) {
-				roundKeys[bytesGenerated] = roundKeys[bytesGenerated - keySize] ^ temp[i];
-				bytesGenerated++;
-			}
 		}
-	
+
+		// 모든 워드에 대한 XOR 연산
+		for (int i = 0; i < 4; ++i) {
+			roundKeys[bytesGenerated] = roundKeys[bytesGenerated - keySize] ^ temp[i];
+			bytesGenerated++;
+		}
 	}
 }
 
@@ -300,52 +297,74 @@ const uint8_t AES::Rcon[11]{
 vector<uint8_t> AES::encrypt(const vector<uint8_t>& data) {
 	// 데이터 패딩
 	vector<uint8_t> paddedData = padData(data);
-	
-	// 초기 상태 설정
-	state = vector<vector<uint8_t>>(4, vector<uint8_t>(4));
-	for (int i = 0; i < data.size(); ++i)
-		state[i / 4][i % 4] = data[i];
-	
-	// 암호화
-	addRoundKey(0);
-	for (int round = 1; round < 10; ++round) {
+	vector<uint8_t> encryptedData;
+
+	// 16바이트 블록 단위로 처리
+	for (size_t i = 0; i < paddedData.size(); i += 16) {
+		// 상태 배열 초기화
+		state = vector<vector<uint8_t>>(4, vector<uint8_t>(4));
+		for (int j = 0; j < 16; ++j) {
+			state[j / 4][j % 4] = paddedData[i + j];
+		}
+
+		// 암호화 과정
+		addRoundKey(0);
+		for (int round = 1; round < 10; ++round) {
+			subBytes();
+			shiftRows();
+			mixColumns();
+			addRoundKey(round);
+		}
 		subBytes();
 		shiftRows();
-		mixColumns();
-		addRoundKey(round);
-	}
-	subBytes();
-	shiftRows();
-	addRoundKey(10);
+		addRoundKey(10);
 
-	// 결과 리턴
-	vector<uint8_t> encryptedData(16);
-	for (int i = 0; i < 16; ++i)
-		encryptedData[i] = state[i / 4][i % 4];
+		// 암호화된 블록 추가
+		for (int j = 0; j < 16; ++j) {
+			encryptedData.push_back(state[j / 4][j % 4]);
+		}
+	}
+
 	return encryptedData;
 }
+	
 
-vector<uint8_t> AES::decrypt(const std::vector<uint8_t>& data) {
-	// 초기 상태 설정 
-	state = vector<vector<uint8_t>>(4, vector<uint8_t>(4)); 
-	for (int i = 0; i < data.size(); ++i) 
-		state[i / 4][i % 4] = data[i];
+vector<uint8_t> AES::decrypt(const vector<uint8_t>& data) {
+	// 입력 데이터는 16의 배수여야 함
+	if (data.size() % 16 != 0) {
+		throw runtime_error("Encrypted data length must be multiple of 16 bytes");
+	}
 
-	// 복호화 
-	addRoundKey(10);
-	for (int round = 9; round > 0; --round) {
+	vector<uint8_t> decryptedData;
+
+	// 16바이트 블록 단위로 처리
+	for (size_t i = 0; i < data.size(); i += 16) {
+		// 상태 배열 초기화
+		state = vector<vector<uint8_t>>(4, vector<uint8_t>(4));
+		for (int j = 0; j < 16; ++j) {
+			state[j / 4][j % 4] = data[i + j];
+		}
+
+		// 복호화 과정
+		addRoundKey(10);
+
+		for (int round = 9; round > 0; --round) {
+			invShiftRows();
+			invSubBytes();
+			addRoundKey(round);
+			invMixColumns();
+		}
+
 		invShiftRows();
 		invSubBytes();
-		addRoundKey(round);
-		invMixColumns();
+		addRoundKey(0);
+
+		// 복호화된 블록 추가
+		for (int j = 0; j < 16; ++j) {
+			decryptedData.push_back(state[j / 4][j % 4]);
+		}
 	}
-	invShiftRows();
-	invSubBytes();
-	addRoundKey(0);
-	
-	// 패딩 제거 후 결과 리턴
-	vector<uint8_t>decryptedData(16);
-	for (int i = 0; i < 16; ++i) 
-		decryptedData[i] = state[i / 4][i % 4];
+
+	// 마지막에 패딩 제거
 	return unpadData(decryptedData);
 }

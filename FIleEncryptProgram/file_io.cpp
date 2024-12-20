@@ -6,29 +6,19 @@
 using namespace std;
 
 // 파일 읽기 함수
-std::vector<uint8_t> readFile(const std::string& filePath) {
+vector<uint8_t> readFile(const string& filePath) {
     // 파일을 바이너리 모드로 읽기
     ifstream file(filePath, ios::binary);
     
-    if (!file) {
+    if (!file.is_open()) {
         throw runtime_error("Failed to open file: " + filePath);
     }
-
-    // 파일 크기 알아내기
-    file.seekg(0, ios::end);
-    size_t fileSize = file.tellg();
-    file.seekg(0, ios::beg);
-
+    
     // 파일 내용을 vector에 저장
-    std::vector<uint8_t> buffer(fileSize);
-    file.read(reinterpret_cast<char*>(buffer.data()), fileSize);
-
-    if (!file) {
-        throw runtime_error("Error reading file: " + filePath);
-    }
+    vector<uint8_t> fileContents((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
 
     file.close();
-    return buffer;
+    return fileContents;
 }
 
 // 파일 쓰기 함수
