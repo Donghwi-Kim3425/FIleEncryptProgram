@@ -26,7 +26,7 @@ private:
 	void invMixColumns();
 
 	vector<vector<uint8_t>> state;
-	vector<uint32_t> roundKeys;
+	vector<uint8_t> roundKeys;
 	vector<uint8_t> key;
 	static const uint8_t Sbox[256];
 	static const uint8_t InvSbox[256];

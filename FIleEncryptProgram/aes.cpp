@@ -5,6 +5,7 @@
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
+#include <vector>
 #include <iostream>
 
 using namespace std;
@@ -303,6 +304,9 @@ const uint8_t AES::Rcon[11]{
 vector<uint8_t> AES::encrypt(const vector<uint8_t>& data) {
 	// 데이터 패딩 처리
 	vector<uint8_t> paddedData = padData(data);  // 패딩 처리된 데이터 사용
+	if (paddedData.empty()) {
+		return {}; // 빈 벡터 반환 또는 예외 발생
+	}
 	vector<uint8_t> encryptedData;
 
 	// 16바이트 블록 단위로 처리
