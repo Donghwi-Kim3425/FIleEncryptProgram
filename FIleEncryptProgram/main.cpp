@@ -75,9 +75,26 @@ int main() {
         }
 
         else if (operation == "decrypt") {
-            outputData = aes.decrypt(fileData);  // AES 복호화
-            writeFile(filePath + ".dec", outputData);  // 파일을 바이너리로 저장
-            cout << "File decrypted and saved as " << filePath + ".dec" << endl;
+            cout << "Stating decryotin..." << endl;
+            cout << "Data size: " << fileData.size() << "bytes" << endl;
+
+            try {
+                outputData = aes.decrypt(fileData);  // AES 복호화
+                cout << "Decryption successful. Decrypted data size: " << outputData.size() << " bytes" << endl;
+            }
+            catch (const exception& e) {
+                cerr << "Error during decryption: " << e.what() << endl;
+                return 1;
+            }
+
+            try {
+                writeFile("dec. " + filePath, outputData); // 파일저장
+                cout << "File decrypted and saved as " << "dec. " + filePath << endl;
+            }
+            catch (const exception& e) {
+                cerr << "Error during file writing: " << e.what() << endl;
+                return 1;
+            }
         }
     }
     catch (const exception& e) {

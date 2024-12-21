@@ -59,11 +59,11 @@ void AES::keyExpansion() {
 	const int keySize = 16;
 	const int expandedKeySize = 176;
 	roundKeys.clear();
-	roundKeys.resize(expandedKeySize / 4); // Correct size: 44 words
+	roundKeys.resize(expandedKeySize / 4); 
 
-	// Initial key copy
+	// 초기 키 복사
 	for (int i = 0; i < keySize; ++i)
-		roundKeys[i / 4] |= (key[i] << (8 * (3 - (i % 4)))); // Correctly insert bytes into words
+		roundKeys[i / 4] |= (key[i] << (8 * (3 - (i % 4)))); 
 
 	int bytesGenerated = keySize;
 	int rconIndex = 1;
@@ -72,10 +72,9 @@ void AES::keyExpansion() {
 	while (bytesGenerated < expandedKeySize) {
 		// Copy the last 4 bytes
 		for (int i = 0; i < 4; ++i)
-			temp[i] = roundKeys[(bytesGenerated - 4) / 4] >> (8 * (3 - i)) & 0xFF; // Correct indexing
+			temp[i] = roundKeys[(bytesGenerated - 4) / 4] >> (8 * (3 - i)) & 0xFF; 
 
 		if (bytesGenerated % keySize == 0) {
-			// Core schedule
 			// RotWord
 			uint8_t k = temp[0];
 			temp[0] = temp[1];
@@ -335,8 +334,6 @@ vector<uint8_t> AES::encrypt(const vector<uint8_t>& data) {
 
 	return encryptedData;
 }
-
-
 
 vector<uint8_t> AES::decrypt(const vector<uint8_t>& data) {
 	// 입력 데이터는 16의 배수여야 함
