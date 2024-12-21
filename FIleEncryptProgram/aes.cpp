@@ -40,9 +40,9 @@ string AES::generateRandomKey() {
 // 패딩 추가 함수
 vector<uint8_t> AES::padData(const vector<uint8_t>& data) {
 	size_t paddingRequired = 16 - (data.size() % 16);
-	vector<uint8_t> paddedData = data;
+	if (paddingRequired == 0) paddingRequired = 16; // 16의 배수 처리
 
-	// 패딩 바이트 추가 (패딩 바이트 값은 'paddingRequired' 값)
+	vector<uint8_t> paddedData = data;
 	paddedData.insert(paddedData.end(), paddingRequired, paddingRequired);
 
 	return paddedData;
@@ -50,10 +50,22 @@ vector<uint8_t> AES::padData(const vector<uint8_t>& data) {
 
 // 패딩 제거 함수
 vector<uint8_t> AES::unpadData(const vector<uint8_t>& data) {
-	if (data.empty()) return data;
+	if (data.empty()) throw runtime_error("Cannot unpad empty data.");
 	size_t padLength = data.back();
+	cout << "Unpadding: padLength = " << padLength << ", data.size() = " << data.size() << endl;
+
+	if (padLength == 0 || padLength > 16 || padLength > data.size()) {
+		throw runtime_error("Invalid padding detected.");
+	}
+	// 패딩 바이트 검증
+	for (size_t i = 0; i < padLength; ++i) {
+		if (data[data.size() - 1 - i] != padLength) {
+			throw runtime_error("Invalid padding detected: mismatched padding byte.");
+		}
+	}
 	return vector<uint8_t>(data.begin(), data.end() - padLength);
 }
+
 
 void AES::keyExpansion() {
 	const int keySize = 16;
@@ -93,9 +105,12 @@ void AES::keyExpansion() {
 
 		// XOR and add to round keys
 		for (int i = 0; i < 4; ++i) {
-			roundKeys[bytesGenerated / 4] |= (uint32_t)(temp[i] ^ (roundKeys[(bytesGenerated - keySize) / 4] >> (8 * (3 - i)) & 0xFF)) << (8 * (3 - i)); // Correct indexing and word construction
+			roundKeys[bytesGenerated / 4] |=
+				(uint32_t)(temp[i] ^ (roundKeys[(bytesGenerated - keySize) / 4] >> (8 * (3 - i)) & 0xFF))
+				<< (8 * (3 - i));
 			bytesGenerated++;
 		}
+
 	}
 }
 
@@ -336,14 +351,10 @@ vector<uint8_t> AES::encrypt(const vector<uint8_t>& data) {
 }
 
 vector<uint8_t> AES::decrypt(const vector<uint8_t>& data) {
-	// 입력 데이터는 16의 배수여야 함
 	if (data.size() % 16 != 0) {
 		throw runtime_error("Encrypted data length must be multiple of 16 bytes");
 	}
-
 	vector<uint8_t> decryptedData;
-
-	// 16바이트 블록 단위로 처리
 	for (size_t i = 0; i < data.size(); i += 16) {
 		// 상태 배열 초기화
 		state = vector<vector<uint8_t>>(4, vector<uint8_t>(4));
@@ -353,14 +364,12 @@ vector<uint8_t> AES::decrypt(const vector<uint8_t>& data) {
 
 		// 복호화 과정
 		addRoundKey(10);
-
 		for (int round = 9; round > 0; --round) {
 			invShiftRows();
 			invSubBytes();
 			addRoundKey(round);
 			invMixColumns();
 		}
-
 		invShiftRows();
 		invSubBytes();
 		addRoundKey(0);
@@ -370,6 +379,7 @@ vector<uint8_t> AES::decrypt(const vector<uint8_t>& data) {
 			decryptedData.push_back(state[j / 4][j % 4]);
 		}
 	}
+	cout << "Decryption completed. Total decrypted size: " << decryptedData.size() << endl;
 
 	// 마지막에 패딩 제거
 	return unpadData(decryptedData);

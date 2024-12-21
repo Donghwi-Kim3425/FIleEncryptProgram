@@ -42,13 +42,6 @@ int main() {
             throw invalid_argument("Invalid operation. Please enter 'encrypt' or 'decrypt'");
         }
 
-        // 랜덤 키 생성
-        string key = AES::generateRandomKey();
-        cout << "Generated Random Key (hex): " << key << endl;
-
-        // AES 객체 생성
-        AES aes(key);
-
         // 암호화 또는 복호화 수행
         vector<uint8_t> outputData;
         if (operation == "encrypt") {
@@ -56,6 +49,12 @@ int main() {
             cout << "Original data size: " << fileData.size() << " bytes" << endl;
 
             try {
+                // 랜덤 키 생성
+                string key = AES::generateRandomKey();
+                cout << "Generated Random Key (hex): " << key << endl;
+
+                // AES 객체 생성
+                AES aes(key);
                 outputData = aes.encrypt(fileData);  // AES 암호화
                 cout << "Encryption successful. Encrypted data size: " << outputData.size() << " bytes" << endl;
             }
@@ -75,11 +74,18 @@ int main() {
         }
 
         else if (operation == "decrypt") {
-            cout << "Stating decryotin..." << endl;
-            cout << "Data size: " << fileData.size() << "bytes" << endl;
+            string key;
+
+            cout << "Enter decryption key: ";
+            cin >> key;
+
+            cout << "Stating decrypotin..." << endl;
+            cout << "Data size: " << fileData.size() << " bytes" << endl;
 
             try {
-                outputData = aes.decrypt(fileData);  // AES 복호화
+                AES aes(key);
+                vector<uint8_t> encryptedData = readHexFile(filePath);
+                outputData = aes.decrypt(encryptedData);  // AES 복호화
                 cout << "Decryption successful. Decrypted data size: " << outputData.size() << " bytes" << endl;
             }
             catch (const exception& e) {
@@ -88,8 +94,8 @@ int main() {
             }
 
             try {
-                writeFile("dec. " + filePath, outputData); // 파일저장
-                cout << "File decrypted and saved as " << "dec. " + filePath << endl;
+                writeStringFile("dec." + filePath, bytesToString(outputData)); // 파일저장
+                cout << "File decrypted and saved as " << "dec." + filePath << endl;
             }
             catch (const exception& e) {
                 cerr << "Error during file writing: " << e.what() << endl;
