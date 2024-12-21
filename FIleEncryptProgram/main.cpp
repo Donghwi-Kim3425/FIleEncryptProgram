@@ -15,23 +15,6 @@ int main() {
         cout << "File Path: " << filePath << endl;
 
         vector<uint8_t> fileData;
-        // 파일 읽기
-        try {
-            fileData = readFile(filePath);
-            cout << "File content read successfully." << endl;
-            cout << "File size: " << fileData.size() << " bytes" << endl;
-            cout << "File data (hex): ";
-            for (size_t i = 0; i < fileData.size(); ++i) {
-                printf("%02x ", fileData[i]);
-                if (i % 16 == 15) cout << endl; // 16바이트씩 출력
-            }
-            cout << endl;
-
-        }
-        catch (const exception& e) {
-            cerr << "Error reading file: " << e.what() << endl;
-            return 1;
-        }
 
         // 암호화 또는 복호화 선택
         cout << "Do you want to encrypt or decrypt the file? (encrypt/decrypt): ";
@@ -45,6 +28,24 @@ int main() {
         // 암호화 또는 복호화 수행
         vector<uint8_t> outputData;
         if (operation == "encrypt") {
+            // 파일 읽기
+            try {
+                fileData = readFile(filePath);
+                cout << "File content read successfully." << endl;
+                cout << "File size: " << fileData.size() << " bytes" << endl;
+                cout << "File data (hex): ";
+                for (size_t i = 0; i < fileData.size(); ++i) {
+                    printf("%02x ", fileData[i]);
+                    if (i % 16 == 15) cout << endl; // 16바이트씩 출력
+                }
+                cout << endl;
+
+            }
+            catch (const exception& e) {
+                cerr << "Error reading file: " << e.what() << endl;
+                return 1;
+            }
+
             cout << "Starting encryption..." << endl;
             cout << "Original data size: " << fileData.size() << " bytes" << endl;
 
