@@ -3,6 +3,7 @@
 #include <vector>
 #include "aes.h"
 #include "file_io.h"
+
 using namespace std;
 
 int main() {
@@ -48,7 +49,6 @@ int main() {
         // AES 객체 생성
         AES aes(key);
 
-
         // 암호화 또는 복호화 수행
         vector<uint8_t> outputData;
         if (operation == "encrypt") {
@@ -65,8 +65,8 @@ int main() {
             }
 
             try {
-                writeFile(filePath + ".enc", outputData);  // 파일 저장
-                cout << "File encrypted and saved as " << filePath + ".enc" << endl;
+                writeFile("enc." + filePath, outputData);  // 파일 저장
+                cout << "File encrypted and saved as " << "enc." + filePath << endl;
             }
             catch (const exception& e) {
                 cerr << "Error during file writing: " << e.what() << endl;

@@ -1,9 +1,21 @@
 #include "file_io.h"
 #include <iostream>
 #include <fstream>
+#include <iomanip>
+#include <sstream>
 #include <vector>
+#include <fstream>
 
 using namespace std;
+
+// 바이트 데이터를 16진수 문자열로 변환
+string bytesToHex(const vector<uint8_t>& bytes) {
+    stringstream ss;
+    ss << hex << uppercase;
+    for (uint8_t byte : bytes)
+        ss << setw(2) << setfill('0') << static_cast<int>(byte);
+    return ss.str();
+}
 
 // 파일 읽기 함수
 vector<uint8_t> readFile(const string& filePath) {
@@ -23,18 +35,17 @@ vector<uint8_t> readFile(const string& filePath) {
 
 // 파일 쓰기 함수
 void writeFile(const std::string& filePath, const std::vector<uint8_t>& data) {
-    // 파일을 바이너리 모드로 열기
-    ofstream file(filePath, ios::binary);
-    
-    if (!file) {
-        throw runtime_error("Failed to open file for writing: " + filePath);
+    // 파일을 텍스트 모드로 열기
+    ofstream file(filePath);
+    string hexString = bytesToHex(data);
+    if (!file.is_open()) {
+        throw std::runtime_error("Failed to open file for writing: " + filePath);
     }
 
-    // 데이터를 파일에 쓰기
-    file.write(reinterpret_cast<const char*>(data.data()), data.size());
+    file << hexString; // 16진수 문자열을 파일에 씀
 
-    if (!file) {
-        throw runtime_error("Error writing to file: " + filePath);
+    if (file.fail()) { 
+        throw std::runtime_error("Error writing to file: " + filePath);
     }
 
     file.close();
