@@ -5,17 +5,10 @@
 #include <vector>
 #include <cstdint>
 
-using namespace std;
-
 class AES {
-public:
-	AES(const string& key);
-	static string generateRandomKey();
-	static vector<uint8_t> padData(const vector<uint8_t>& data); // 패딩 추가 함수
-	static vector<uint8_t> unpadData(const vector<uint8_t>& data); // 패딩 제거 함수
-	vector<uint8_t>encrypt(const vector<uint8_t>& data);
-	vector<uint8_t>decrypt(const vector<uint8_t>& data);
-private:
+	std::vector<std::vector<uint8_t>> state;
+	std::vector<uint8_t> roundKeys;
+	std::vector<uint8_t> key;
 	void keyExpansion();
 	void addRoundKey(int round);
 	void subBytes();
@@ -24,14 +17,17 @@ private:
 	void invSubBytes();
 	void invShiftRows();
 	void invMixColumns();
-
-	vector<vector<uint8_t>> state;
-	vector<uint8_t> roundKeys;
-	vector<uint8_t> key;
+	static uint8_t gmul(uint8_t a, uint8_t b);
 	static const uint8_t Sbox[256];
 	static const uint8_t InvSbox[256];
 	static const uint8_t Rcon[11];
-	static uint8_t gmul(uint8_t a, uint8_t b);
+public:
+	AES(const std::string& key);
+	static std::string generateRandomKey();
+	static std::vector<uint8_t> padData(const std::vector<uint8_t>& data); // 패딩 추가 함수
+	static std::vector<uint8_t> unpadData(const std::vector<uint8_t>& data); // 패딩 제거 함수
+	std::vector<uint8_t>encrypt(const std::vector<uint8_t>& data);
+	std::vector<uint8_t>decrypt(const std::vector<uint8_t>& data);
 };
 
 

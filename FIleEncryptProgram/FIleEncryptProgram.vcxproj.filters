@@ -24,9 +24,6 @@
     <ClCompile Include="aes.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="seed.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
     <ClCompile Include="rsa.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
@@ -36,9 +33,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="rsa.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="seed.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="file_io.h">

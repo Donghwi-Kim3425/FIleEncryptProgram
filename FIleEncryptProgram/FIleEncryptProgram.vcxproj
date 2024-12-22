@@ -133,12 +133,10 @@
     <ClCompile Include="file_io.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="rsa.cpp" />
-    <ClCompile Include="seed.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="file_io.h" />
     <ClInclude Include="rsa.h" />
-    <ClInclude Include="seed.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
