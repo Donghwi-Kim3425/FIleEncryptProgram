@@ -8,105 +8,58 @@ using namespace std;
 
 int main() {
     try {
+        // 사용자 입력 받기
         string filePath, operation;
-        // 파일 경로 입력 받기
         cout << "Enter the path to the file: ";
         getline(cin, filePath);
         cout << "File Path: " << filePath << endl;
 
-        vector<uint8_t> fileData;
-
-        // 암호화 또는 복호화 선택
         cout << "Do you want to encrypt or decrypt the file? (encrypt/decrypt): ";
         getline(cin, operation);
 
-        // 에러 처리
+        // 작업 유형 검증
         if (operation != "encrypt" && operation != "decrypt") {
             throw invalid_argument("Invalid operation. Please enter 'encrypt' or 'decrypt'");
         }
 
-        // 암호화 또는 복호화 수행
-        vector<uint8_t> outputData;
+        // 암호화 수행
         if (operation == "encrypt") {
             // 파일 읽기
-            try {
-                fileData = readFile(filePath);
-                cout << "File content read successfully." << endl;
-                cout << "File size: " << fileData.size() << " bytes" << endl;
-                cout << "File data (hex): ";
-                for (size_t i = 0; i < fileData.size(); ++i) {
-                    printf("%02x ", fileData[i]);
-                    if (i % 16 == 15) cout << endl; // 16바이트씩 출력
-                }
-                cout << endl;
+            vector<uint8_t> fileData = readFile(filePath);
 
-            }
-            catch (const exception& e) {
-                cerr << "Error reading file: " << e.what() << endl;
-                return 1;
-            }
+            // 암호화 수행
+            string key = AES::generateRandomKey();
+            cout << "Generated Random Key (hex): " << key << endl;
 
-            cout << "Starting encryption..." << endl;
-            cout << "Original data size: " << fileData.size() << " bytes" << endl;
+            AES aes(key);
+            vector<uint8_t> encryptedData = aes.encrypt(fileData);
 
-            try {
-                // 랜덤 키 생성
-                string key = AES::generateRandomKey();
-                cout << "Generated Random Key (hex): " << key << endl;
-
-                // AES 객체 생성
-                AES aes(key);
-                outputData = aes.encrypt(fileData);  // AES 암호화
-                cout << "Encryption successful. Encrypted data size: " << outputData.size() << " bytes" << endl;
-            }
-            catch (const exception& e) {
-                cerr << "Error during encryption: " << e.what() << endl;
-                return 1;  // 종료
-            }
-
-            try {
-                writeFile("enc." + filePath, outputData);  // 파일 저장
-                cout << "File encrypted and saved as " << "enc." + filePath << endl;
-            }
-            catch (const exception& e) {
-                cerr << "Error during file writing: " << e.what() << endl;
-                return 1;  // 종료
-            }
+            // 암호화된 데이터 저장
+            writeFile("enc." + filePath, encryptedData);
         }
-
-        else if (operation == "decrypt") {
+        // 복호화 수행
+        else {
+            // 키 입력 받기
             string key;
-
             cout << "Enter decryption key: ";
             cin >> key;
 
-            cout << "Stating decrypotin..." << endl;
-            cout << "Data size: " << fileData.size() << " bytes" << endl;
+            // 암호화된 파일 읽기
+            vector<uint8_t> encryptedData = readHexFile(filePath);
 
-            try {
-                AES aes(key);
-                vector<uint8_t> encryptedData = readHexFile(filePath);
-                outputData = aes.decrypt(encryptedData);  // AES 복호화
-                cout << "Decryption successful. Decrypted data size: " << outputData.size() << " bytes" << endl;
-            }
-            catch (const exception& e) {
-                cerr << "Error during decryption: " << e.what() << endl;
-                return 1;
-            }
+            // 복호화 수행
+            AES aes(key);
+            vector<uint8_t> decryptedData = aes.decrypt(encryptedData);
 
-            try {
-                writeStringFile("dec." + filePath, bytesToString(outputData)); // 파일저장
-                cout << "File decrypted and saved as " << "dec." + filePath << endl;
-            }
-            catch (const exception& e) {
-                cerr << "Error during file writing: " << e.what() << endl;
-                return 1;
-            }
+            // 복호화된 데이터 저장
+            writeStringFile("dec." + filePath, bytesToString(decryptedData));
         }
+
+        cout << "Operation completed successfully!" << endl;
+        return 0;
     }
     catch (const exception& e) {
         cerr << "Error: " << e.what() << endl;
         return 1;
     }
-    return 0;
 }
