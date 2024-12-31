@@ -25,4 +25,8 @@ std::vector<uint8_t> hexToBytes(const std::string& hex);
 // 바이트 데이터를 문자열로 변환
 std::string bytesToString(const std::vector<uint8_t>& bytes);
 
+std::string toHexString(const std::vector<unsigned long long>& data);
+
+std::vector<unsigned long long> fromHexString(const std::string& hexStr);
+
 #endif // FILE_IO_H

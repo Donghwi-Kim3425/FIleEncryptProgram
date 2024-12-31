@@ -7,79 +7,79 @@
 #include <algorithm>
 #include <iostream>
 
-using namespace std;
+//using namespace std;
 
 AES::AES(const std::string& keyHex) { // 16진수 문자열을 바이트 벡터로 변환 
-	vector<uint8_t> keyBytes; 
+	std::vector<uint8_t> keyBytes;
 	for (size_t i = 0; i < keyHex.length(); i += 2)
 		keyBytes.push_back(static_cast<uint8_t>(stoi(keyHex.substr(i, 2), nullptr, 16)));  
 	this->key = keyBytes; 
 	keyExpansion();
 }
 
-string AES::generateRandomKey() {
+std::string AES::generateRandomKey() {
 	const int keyLength = 16; // AES-128은 16바이트의 키 (128 비트)
-	vector<uint8_t> key;
+	std::vector<uint8_t> key;
 	key.reserve(keyLength); // 공간할당
 
 	// 랜덤 값
-	random_device rd;
-	mt19937 gen(rd());
-	uniform_int_distribution<> dis(0, 255);
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<> dis(0, 255);
 
 	for (int i = 0; i < keyLength; ++i)
 		key.push_back(static_cast<uint8_t>(dis(gen)));
 
 	// key값을 16진수값으로 변환
-	stringstream ss;
+	std::stringstream ss;
 	for (int i = 0; i < keyLength; ++i)
-		ss << hex << setw(2) << setfill('0') << static_cast<int>(key[i]);
+		ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(key[i]);
 
 	return ss.str();
 }
 
 // 패딩 추가 함수
-vector<uint8_t> AES::padData(const vector<uint8_t>& data) {
+std::vector<uint8_t> AES::padData(const std::vector<uint8_t>& data) {
 	size_t paddingRequired = 16 - (data.size() % 16); // 패딩 크기 계산
 	if (paddingRequired == 0) paddingRequired = 16; // 16의 배수 처리
 
-	vector<uint8_t> paddedData = data;
+	std::vector<uint8_t> paddedData = data;
 	paddedData.insert(paddedData.end(), paddingRequired, paddingRequired);
 
 	return paddedData;
 }
 
 // 패딩 제거 함수
-vector<uint8_t> AES::unpadData(const vector<uint8_t>& data) {
-	if (data.empty()) throw runtime_error("Cannot unpad empty data.");
+std::vector<uint8_t> AES::unpadData(const std::vector<uint8_t>& data) {
+	if (data.empty()) throw std::runtime_error("Cannot unpad empty data.");
 	size_t padLength = data.back();
-	cout << "Unpadding: padLength = " << padLength << ", data.size() = " << data.size() << endl;
+	std::cout << "Unpadding: padLength = " << padLength << ", data.size() = " << data.size() << std::endl;
 
 	if (padLength == 0 || padLength > 16 || padLength > data.size()) {
-		throw runtime_error("Invalid padding detected.");
+		throw std::runtime_error("Invalid padding detected.");
 	}
 
 	// 패딩 바이트 검증
 	for (size_t i = 0; i < padLength; ++i) {
 		if (data[data.size() - 1 - i] != padLength) {
-			throw runtime_error("Invalid padding detected: mismatched padding byte.");
+			throw std::runtime_error("Invalid padding detected: mismatched padding byte.");
 		}
 	}
-	return vector<uint8_t>(data.begin(), data.end() - padLength);
+	return std::vector<uint8_t>(data.begin(), data.end() - padLength);
 }
 
-vector<uint8_t> AES::encrypt(const vector<uint8_t>& data) {
+std::vector<uint8_t> AES::encrypt(const std::vector<uint8_t>& data) {
 	// 데이터 패딩 처리
-	vector<uint8_t> paddedData = padData(data);  // 패딩 처리된 데이터 사용
+	std::vector<uint8_t> paddedData = padData(data);  // 패딩 처리된 데이터 사용
 	if (paddedData.empty()) {
 		return {}; // 빈 벡터 반환 또는 예외 발생
 	}
-	vector<uint8_t> encryptedData;
+	std::vector<uint8_t> encryptedData;
 
 	// 16바이트 블록 단위로 처리
 	for (size_t i = 0; i < paddedData.size(); i += 16) {
 		// 상태 배열 초기화
-		state = vector<vector<uint8_t>>(4, vector<uint8_t>(4));
+		state = std::vector<std::vector<uint8_t>>(4, std::vector<uint8_t>(4));
 		for (int j = 0; j < 16; ++j) {
 			state[j / 4][j % 4] = paddedData[i + j];
 		}
@@ -105,14 +105,14 @@ vector<uint8_t> AES::encrypt(const vector<uint8_t>& data) {
 	return encryptedData;
 }
 
-vector<uint8_t> AES::decrypt(const vector<uint8_t>& data) {
+std::vector<uint8_t> AES::decrypt(const std::vector<uint8_t>& data) {
 	if (data.size() % 16 != 0) {
-		throw runtime_error("Encrypted data length must be multiple of 16 bytes");
+		throw std::runtime_error("Encrypted data length must be multiple of 16 bytes");
 	}
-	vector<uint8_t> decryptedData;
+	std::vector<uint8_t> decryptedData;
 	for (size_t i = 0; i < data.size(); i += 16) {
 		// 상태 배열 초기화
-		state = vector<vector<uint8_t>>(4, vector<uint8_t>(4));
+		state = std::vector<std::vector<uint8_t>>(4, std::vector<uint8_t>(4));
 		for (int j = 0; j < 16; ++j) {
 			state[j / 4][j % 4] = data[i + j];
 		}
@@ -134,7 +134,7 @@ vector<uint8_t> AES::decrypt(const vector<uint8_t>& data) {
 			decryptedData.push_back(state[j / 4][j % 4]);
 		}
 	}
-	cout << "Decryption completed. Total decrypted size: " << decryptedData.size() << endl;
+	std::cout << "Decryption completed. Total decrypted size: " << decryptedData.size() << std::endl;
 
 	// 마지막에 패딩 제거
 	return unpadData(decryptedData);

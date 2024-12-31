@@ -196,3 +196,23 @@ string bytesToString(const vector<uint8_t>& bytes) {
         throw;
     }
 }
+
+string toHexString(const vector<unsigned long long>& data) {
+    stringstream ss;
+    for (const auto& num : data) {
+        ss << hex << setw(16) << setfill('0') << num << " ";
+    }
+    return ss.str();
+}
+
+vector<unsigned long long> fromHexString(const string& hexStr) {
+    vector<unsigned long long> result;
+    stringstream ss(hexStr);
+    string item;
+    while (getline(ss, item, ' ')) {
+        if (!item.empty()) {
+            result.push_back(stoull(item, nullptr, 16));
+        }
+    }
+    return result;
+}
