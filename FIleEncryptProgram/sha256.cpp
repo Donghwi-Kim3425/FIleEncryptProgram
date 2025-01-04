@@ -45,7 +45,6 @@ std::string SHA256::digest() {
     return result.str();
 }
 
-
 uint32_t SHA256::rotr(uint32_t value, unsigned int bits) {
     return (value >> bits) | (value << (32 - bits));
 }

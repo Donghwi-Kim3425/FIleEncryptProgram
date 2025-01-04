@@ -40,11 +40,15 @@ std::string AES::generateRandomKey() {
 
 // 패딩 추가 함수
 std::vector<uint8_t> AES::padData(const std::vector<uint8_t>& data) {
-	size_t paddingRequired = 16 - (data.size() % 16); // 패딩 크기 계산
-	if (paddingRequired == 0) paddingRequired = 16; // 16의 배수 처리
+	uint8_t paddingRequired = 16 - (data.size() % 16);  // size_t 대신 uint8_t 사용
+	if (paddingRequired == 0) paddingRequired = 16;
 
 	std::vector<uint8_t> paddedData = data;
 	paddedData.insert(paddedData.end(), paddingRequired, paddingRequired);
+
+	// 디버깅을 위한 패딩 정보 출력
+	std::cout << "Padding: adding " << (int)paddingRequired << " bytes of value 0x"
+		<< std::hex << (int)paddingRequired << std::dec << std::endl;
 
 	return paddedData;
 }
@@ -52,36 +56,51 @@ std::vector<uint8_t> AES::padData(const std::vector<uint8_t>& data) {
 // 패딩 제거 함수
 std::vector<uint8_t> AES::unpadData(const std::vector<uint8_t>& data) {
 	if (data.empty()) throw std::runtime_error("Cannot unpad empty data.");
-	size_t padLength = data.back();
-	std::cout << "Unpadding: padLength = " << padLength << ", data.size() = " << data.size() << std::endl;
 
+	uint8_t padLength = data.back();  // size_t 대신 uint8_t 사용
+	std::cout << "Unpadding: padLength = " << (int)padLength << ", data.size() = " << data.size() << std::endl;
+
+	// 패딩 길이 검증 조건 수정
 	if (padLength == 0 || padLength > 16 || padLength > data.size()) {
+		std::cout << "Last byte (padding length): 0x" << std::hex << (int)data.back() << std::endl;
+		// 마지막 16바이트 출력하여 디버깅
+		std::cout << "Last block: ";
+		for (size_t i = data.size() - std::min<size_t>(16, data.size()); i < data.size(); ++i) {
+			std::cout << std::hex << std::setw(2) << std::setfill('0') << (int)data[i] << " ";
+		}
+		std::cout << std::dec << std::endl;
 		throw std::runtime_error("Invalid padding detected.");
 	}
 
-	// 패딩 바이트 검증
+	// 패딩 바이트 검증 전에 데이터 출력
+	std::cout << "Checking padding bytes..." << std::endl;
 	for (size_t i = 0; i < padLength; ++i) {
-		if (data[data.size() - 1 - i] != padLength) {
+		uint8_t paddingByte = data[data.size() - 1 - i];
+		std::cout << "Padding byte " << i << ": 0x" << std::hex << (int)paddingByte << std::endl;
+		if (paddingByte != padLength) {
 			throw std::runtime_error("Invalid padding detected: mismatched padding byte.");
 		}
 	}
+
 	return std::vector<uint8_t>(data.begin(), data.end() - padLength);
 }
 
 std::vector<uint8_t> AES::encrypt(const std::vector<uint8_t>& data) {
 	// 데이터 패딩 처리
-	std::vector<uint8_t> paddedData = padData(data);  // 패딩 처리된 데이터 사용
-	if (paddedData.empty()) {
-		return {}; // 빈 벡터 반환 또는 예외 발생
-	}
+	std::vector<uint8_t> paddedData = padData(data);
 	std::vector<uint8_t> encryptedData;
+	encryptedData.reserve(paddedData.size());  // 미리 공간 할당
 
 	// 16바이트 블록 단위로 처리
 	for (size_t i = 0; i < paddedData.size(); i += 16) {
 		// 상태 배열 초기화
 		state = std::vector<std::vector<uint8_t>>(4, std::vector<uint8_t>(4));
-		for (int j = 0; j < 16; ++j) {
-			state[j / 4][j % 4] = paddedData[i + j];
+
+		// 입력 데이터를 state 배열에 복사
+		for (int row = 0; row < 4; ++row) {
+			for (int col = 0; col < 4; ++col) {
+				state[row][col] = paddedData[i + row * 4 + col];
+			}
 		}
 
 		// 암호화 과정
@@ -96,12 +115,15 @@ std::vector<uint8_t> AES::encrypt(const std::vector<uint8_t>& data) {
 		shiftRows();
 		addRoundKey(10);
 
-		// 암호화된 블록 추가
-		for (int j = 0; j < 16; ++j) {
-			encryptedData.push_back(state[j / 4][j % 4]);
+		// 암호화된 블록을 일렬로 저장
+		for (int row = 0; row < 4; ++row) {
+			for (int col = 0; col < 4; ++col) {
+				encryptedData.push_back(state[row][col]);
+			}
 		}
 	}
 
+	std::cout << "Encrypted size: " << encryptedData.size() << std::endl;
 	return encryptedData;
 }
 
@@ -109,12 +131,19 @@ std::vector<uint8_t> AES::decrypt(const std::vector<uint8_t>& data) {
 	if (data.size() % 16 != 0) {
 		throw std::runtime_error("Encrypted data length must be multiple of 16 bytes");
 	}
+
 	std::vector<uint8_t> decryptedData;
+	decryptedData.reserve(data.size());  // 미리 공간 할당
+
 	for (size_t i = 0; i < data.size(); i += 16) {
 		// 상태 배열 초기화
 		state = std::vector<std::vector<uint8_t>>(4, std::vector<uint8_t>(4));
-		for (int j = 0; j < 16; ++j) {
-			state[j / 4][j % 4] = data[i + j];
+
+		// 입력 데이터를 state 배열에 복사
+		for (int row = 0; row < 4; ++row) {
+			for (int col = 0; col < 4; ++col) {
+				state[row][col] = data[i + row * 4 + col];
+			}
 		}
 
 		// 복호화 과정
@@ -129,14 +158,16 @@ std::vector<uint8_t> AES::decrypt(const std::vector<uint8_t>& data) {
 		invSubBytes();
 		addRoundKey(0);
 
-		// 복호화된 블록 추가
-		for (int j = 0; j < 16; ++j) {
-			decryptedData.push_back(state[j / 4][j % 4]);
+		// 복호화된 블록을 일렬로 저장
+		for (int row = 0; row < 4; ++row) {
+			for (int col = 0; col < 4; ++col) {
+				decryptedData.push_back(state[row][col]);
+			}
 		}
 	}
-	std::cout << "Decryption completed. Total decrypted size: " << decryptedData.size() << std::endl;
 
-	// 마지막에 패딩 제거
+	std::cout << "Decrypted size before unpadding: " << decryptedData.size() << std::endl;
+	// 패딩 제거
 	return unpadData(decryptedData);
 }
 

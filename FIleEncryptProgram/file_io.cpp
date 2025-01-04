@@ -3,7 +3,6 @@
 #include <fstream>
 #include <iomanip>
 #include <sstream>
-#include <vector>
 
 using namespace std;
 
@@ -13,8 +12,7 @@ vector<uint8_t> readFile(const string& filePath) {
         // 파일을 바이너리 모드로 읽기
         ifstream file(filePath, ios::binary);
         if (!file.is_open()) {
-            cerr << "Failed to open file: " << filePath << endl;
-            throw runtime_error("Could not open file for reading");
+            throw runtime_error("Could not open file for reading: " + filePath);
         }
 
         // 파일 크기 확인
@@ -26,26 +24,26 @@ vector<uint8_t> readFile(const string& filePath) {
             cerr << "Warning: File is empty: " << filePath << endl;
         }
 
-        // 파일 내용을 vector에 저장
-        vector<uint8_t> fileContents((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
+        // 데이터 읽기
+        vector<uint8_t> data(fileSize);
+        file.read(reinterpret_cast<char*>(data.data()), fileSize);
 
         if (file.fail()) {
-            cerr << "Error occurred while reading file: " << filePath << endl;
             throw runtime_error("File read operation failed");
         }
 
         file.close();
 
-        cout << "Successfully read " << fileContents.size() << " bytes from " << filePath << endl;
+        cout << "Successfully read " << data.size() << " bytes from " << filePath << endl;
         cout << "File content (hex): ";
-        for (size_t i = 0; i < min(fileContents.size(), size_t(32)); ++i) {
-            printf("%02x ", fileContents[i]);
+        for (size_t i = 0; i < min(data.size(), size_t(16)); ++i) {
+            printf("%02x ", data[i]);
             if (i % 16 == 15) cout << endl;
         }
-        if (fileContents.size() > 32) cout << "... (truncated)";
+        if (data.size() > 16) cout << "... (truncated)";
         cout << endl;
 
-        return fileContents;
+        return data;
     }
     catch (const exception& e) {
         cerr << "Error in readFile: " << e.what() << endl;
@@ -53,49 +51,17 @@ vector<uint8_t> readFile(const string& filePath) {
     }
 }
 
-// 파일 읽기 함수 (16진수)
-vector<uint8_t> readHexFile(const string& filePath) {
-    try {
-        ifstream file(filePath);
-        if (!file.is_open()) {
-            cerr << "Failed to open hex file: " << filePath << endl;
-            throw runtime_error("Could not open hex file for reading");
-        }
-
-        string hexString((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
-        file.close();
-
-        // 16진수 문자열 유효성 검사
-        if (hexString.empty()) {
-            throw runtime_error("Hex file is empty");
-        }
-        if (hexString.length() % 2 != 0) {
-            throw runtime_error("Invalid hex string length - must be even");
-        }
-
-        cout << "Successfully read hex file: " << filePath << endl;
-        return hexToBytes(hexString);
-    }
-    catch (const exception& e) {
-        cerr << "Error in readHexFile: " << e.what() << endl;
-        throw;
-    }
-}
-
-// 파일 쓰기 함수 (16진수)
+// 파일 쓰기 함수 (바이너리)
 void writeFile(const string& filePath, const vector<uint8_t>& data) {
     try {
-        ofstream file(filePath);
+        ofstream file(filePath, ios::binary);
         if (!file.is_open()) {
-            cerr << "Failed to open file for writing: " << filePath << endl;
-            throw runtime_error("Could not open file for writing");
+            throw runtime_error("Could not open file for writing: " + filePath);
         }
 
-        string hexString = bytesToHex(data);
-        file << hexString;
+        file.write(reinterpret_cast<const char*>(data.data()), data.size());
 
         if (file.fail()) {
-            cerr << "Error occurred while writing to file: " << filePath << endl;
             throw runtime_error("File write operation failed");
         }
 
@@ -108,19 +74,17 @@ void writeFile(const string& filePath, const vector<uint8_t>& data) {
     }
 }
 
-// 파일 쓰기 함수 (string) 
+// 문자열 파일 쓰기 함수 (다이제스트 등을 위해 유지)
 void writeStringFile(const string& filePath, const string& data) {
     try {
         ofstream file(filePath);
         if (!file.is_open()) {
-            cerr << "Failed to open file for writing: " << filePath << endl;
-            throw runtime_error("Could not open file for writing");
+            throw runtime_error("Could not open file for writing: " + filePath);
         }
 
         file << data;
 
         if (file.fail()) {
-            cerr << "Error occurred while writing to file: " << filePath << endl;
             throw runtime_error("File write operation failed");
         }
 
@@ -133,68 +97,52 @@ void writeStringFile(const string& filePath, const string& data) {
     }
 }
 
-// 바이트 데이터를 16진수 문자열로 변환
+// 문자열 파일 읽기 함수
+string readStringFile(const string& filePath) {
+    try {
+        ifstream file(filePath);
+        if (!file.is_open()) {
+            throw runtime_error("Could not open file for reading: " + filePath);
+        }
+
+        string content((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
+        file.close();
+        return content;
+    }
+    catch (const exception& e) {
+        cerr << "Error in readStringFile: " << e.what() << endl;
+        throw;
+    }
+}
+
+// 유틸리티 함수들 (그대로 유지)
 string bytesToHex(const vector<uint8_t>& bytes) {
-    try {
-        if (bytes.empty()) {
-            cerr << "Warning: Converting empty byte array to hex" << endl;
-        }
-
-        stringstream ss;
-        ss << hex << uppercase;
-        for (uint8_t byte : bytes) {
-            ss << setw(2) << setfill('0') << static_cast<int>(byte);
-        }
-        return ss.str();
+    stringstream ss;
+    ss << hex << uppercase;
+    for (uint8_t byte : bytes) {
+        ss << setw(2) << setfill('0') << static_cast<int>(byte);
     }
-    catch (const exception& e) {
-        cerr << "Error in bytesToHex: " << e.what() << endl;
-        throw;
-    }
+    return ss.str();
 }
 
-// 16진수 문자열을 바이트로 데이터로 변환
 vector<uint8_t> hexToBytes(const string& hex) {
-    try {
-        if (hex.empty()) {
-            throw runtime_error("Empty hex string");
-        }
-        if (hex.length() % 2 != 0) {
-            throw runtime_error("Invalid hex string length - must be even");
-        }
-
-        vector<uint8_t> bytes;
-        for (size_t i = 0; i < hex.length(); i += 2) {
-            string byteString = hex.substr(i, 2);
-
-            // 16진수 문자 유효성 검사
-            if (!isxdigit(byteString[0]) || !isxdigit(byteString[1])) {
-                throw runtime_error("Invalid hex character at position " + to_string(i));
-            }
-
-            uint8_t byte = static_cast<uint8_t>(stoi(byteString, nullptr, 16));
-            bytes.push_back(byte);
-        }
-        return bytes;
+    if (hex.empty() || hex.length() % 2 != 0) {
+        throw runtime_error("Invalid hex string");
     }
-    catch (const exception& e) {
-        cerr << "Error in hexToBytes: " << e.what() << endl;
-        throw;
+
+    vector<uint8_t> bytes;
+    for (size_t i = 0; i < hex.length(); i += 2) {
+        string byteString = hex.substr(i, 2);
+        if (!isxdigit(byteString[0]) || !isxdigit(byteString[1])) {
+            throw runtime_error("Invalid hex character");
+        }
+        bytes.push_back(static_cast<uint8_t>(stoi(byteString, nullptr, 16)));
     }
+    return bytes;
 }
 
-// 바이트 데이터를 문자열로 변환 
 string bytesToString(const vector<uint8_t>& bytes) {
-    try {
-        if (bytes.empty()) {
-            cerr << "Warning: Converting empty byte array to string" << endl;
-        }
-        return string(bytes.begin(), bytes.end());
-    }
-    catch (const exception& e) {
-        cerr << "Error in bytesToString: " << e.what() << endl;
-        throw;
-    }
+    return string(bytes.begin(), bytes.end());
 }
 
 string toHexString(const vector<unsigned long long>& data) {
@@ -205,14 +153,17 @@ string toHexString(const vector<unsigned long long>& data) {
     return ss.str();
 }
 
-vector<unsigned long long> fromHexString(const string& hexStr) {
+vector<unsigned long long> fromHexString(string hexStr) {
     vector<unsigned long long> result;
-    stringstream ss(hexStr);
-    string item;
-    while (getline(ss, item, ' ')) {
-        if (!item.empty()) {
-            result.push_back(stoull(item, nullptr, 16));
+    istringstream ss(hexStr);
+    string value;
+
+    while (ss >> value) {
+        value.erase(remove_if(value.begin(), value.end(), ::isspace), value.end());
+        if (value.substr(0, 2) == "0x") {
+            value = value.substr(2);
         }
+        result.push_back(stoull(value, nullptr, 16));
     }
     return result;
 }
