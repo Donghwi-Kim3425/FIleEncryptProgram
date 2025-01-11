@@ -19,7 +19,6 @@ int main() {
         unsigned long long privateKey, prime1, prime2;
         RSA::readPrivateKeyFromFile("privateKey.txt", privateKey, prime1, prime2);
         RSA rsa(privateKey, prime1, prime2);
-        SHA256 sha256;
 
         while (true) {
             string filePath, operation;
@@ -40,6 +39,9 @@ int main() {
                 // 파일 읽기 (바이너리)
                 vector<uint8_t> fileData = readFile(filePath);
                 string aesKey = AES::generateRandomKey();
+
+                // 해시 디스트 객체 생성 및 초기화
+                SHA256 sha256;
 
                 // AES 키 암호화 및 정보 출력
                 string encryptedKeyStr = rsa.encryptToString(aesKey);
@@ -89,6 +91,9 @@ int main() {
                 cout << "dbDigest: " << storedDigest << endl;
                 cout << "dbPublicKey: " << dbPublicKey << endl;
                 cout << "dbModulus: " << dbModulus << endl;
+
+                // 해시 디스트 객체 생성 및 초기화
+                SHA256 sha256;
 
                 // AES 키 복호화
                 auto decryptedAesKey = rsa.decryptFromString(dbEncryptedKey);

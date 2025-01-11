@@ -3,8 +3,7 @@
 #include <iomanip>
 #include <cstring>
 
-// 해쉬 값 초기화
-static const uint32_t k[64] = {
+const uint32_t SHA256::k[64] = {
     0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
     0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
     0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
@@ -16,33 +15,7 @@ static const uint32_t k[64] = {
 };
 
 SHA256::SHA256() : buffer(), totalLength(0) {
-    h[0] = 0x6a09e667;
-    h[1] = 0xbb67ae85;
-    h[2] = 0x3c6ef372;
-    h[3] = 0xa54ff53a;
-    h[4] = 0x510e527f;
-    h[5] = 0x9b05688c;
-    h[6] = 0x1f83d9ab;
-    h[7] = 0x5be0cd19;
-}
-
-void SHA256::update(const std::string& data) {
-    buffer.insert(buffer.end(), data.begin(), data.end());
-    totalLength += data.size();
-    while (buffer.size() >= 64) {
-        transform(buffer.data());
-        buffer.erase(buffer.begin(), buffer.begin() + 64);
-    }
-}
-
-std::string SHA256::digest() {
-    pad();
-    process();
-    std::ostringstream result;
-    for (int i = 0; i < 8; ++i) {
-        result << std::hex << std::setw(8) << std::setfill('0') << h[i];
-    }
-    return result.str();
+    reset();
 }
 
 uint32_t SHA256::rotr(uint32_t value, unsigned int bits) {
@@ -103,4 +76,49 @@ void SHA256::process() {
         transform(buffer.data());
         buffer.erase(buffer.begin(), buffer.begin() + 64);
     }
+}
+
+void SHA256::reset() {
+    h[0] = 0x6a09e667;
+    h[1] = 0xbb67ae85;
+    h[2] = 0x3c6ef372;
+    h[3] = 0xa54ff53a;
+    h[4] = 0x510e527f;
+    h[5] = 0x9b05688c;
+    h[6] = 0x1f83d9ab;
+    h[7] = 0x5be0cd19;
+    buffer.clear();
+    totalLength = 0;
+}
+
+void SHA256::update(const std::string& data) {
+    buffer.insert(buffer.end(), data.begin(), data.end());
+    totalLength += data.size();
+    while (buffer.size() >= 64) {
+        transform(buffer.data());
+        buffer.erase(buffer.begin(), buffer.begin() + 64);
+    }
+}
+
+std::string SHA256::digest() {
+    uint32_t current_h[8];
+    std::vector<uint8_t> current_buffer = buffer;
+    uint64_t current_length = totalLength;
+
+    std::memcpy(current_h, h, sizeof(h));
+
+    pad();
+    process();
+
+    std::ostringstream result;
+    result << std::hex << std::setfill('0');
+    for (int i = 0; i < 8; ++i) {
+        result << std::setw(8) << h[i];
+    }
+
+    std::memcpy(h, current_h, sizeof(h));
+    buffer = current_buffer;
+    totalLength = current_length;
+
+    return result.str();
 }
